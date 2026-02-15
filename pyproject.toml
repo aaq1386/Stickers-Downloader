@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stickers-downloader"
+version = "0.2.5"
+description = "A Python package to download and convert Telegram animated stickers (TGS) to GIFs."
+authors = [
+    {name = "Ali Ayati Qaffari", email = "ayatiali910@gmail.com"}
+]
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.7"
+license = "MIT"
+
+dependencies = [
+    "aiohttp>=3.8.0",
+    "rlottie-python>=1.0.0",
+    "rich>=13.0.0"
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics"
+]
+
+[project.urls]
+Homepage = "https://github.com/MrAAQPy/StickersDownloader"
+Repository = "https://github.com/MrAAQPy/StickersDownloader"
+Issues = "https://github.com/MrAAQPy/StickersDownloader/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
