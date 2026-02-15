@@ -2,6 +2,7 @@ import os
 from .utils import load_lottie_auto, is_rlottie_available, console, get_available_methods
 import asyncio
 import traceback
+from typing import List
 
 
 class TgsToGifConverter:
@@ -46,6 +47,9 @@ class TgsToGifConverter:
                         console.print(f"[dim]save_animation without FPS failed: {e2}[/dim]")
             
             if not converted:
+                converted = self._render_gif_frame_by_frame(anim, gif_path)
+
+            if not converted:
                 save_methods = [m for m in dir(anim) if 'save' in m.lower() and ('gif' in m.lower() or 'animation' in m.lower())]
                 
                 for method_name in save_methods:
@@ -77,3 +81,75 @@ class TgsToGifConverter:
             console.print(f"[red]❌ Convert failed {os.path.basename(tgs_path)}: {e}[/red]")
             traceback.print_exc()  
             return False
+
+    def _render_gif_frame_by_frame(self, anim, gif_path: str) -> bool:
+        """Fallback GIF renderer for rlottie builds where `save_animation` fails."""
+        if not hasattr(anim, 'render_pillow_frame'):
+            return False
+
+        try:
+            total_frames = self._resolve_total_frames(anim)
+            if total_frames <= 0:
+                console.print("[dim]Frame-by-frame fallback skipped: total frame count is zero[/dim]")
+                return False
+
+            frame_duration_ms = self._resolve_frame_duration_ms(anim)
+            frames: List = []
+
+            for frame_no in range(total_frames):
+                frame = anim.render_pillow_frame(frame_no)
+                if frame.mode != 'RGBA':
+                    frame = frame.convert('RGBA')
+                frames.append(frame)
+
+            if not frames:
+                return False
+
+            frames[0].save(
+                gif_path,
+                format='GIF',
+                save_all=True,
+                append_images=frames[1:],
+                duration=frame_duration_ms,
+                loop=0,
+                disposal=2,
+            )
+            console.print(f"[green]✓ Saved with render_pillow_frame fallback ({total_frames} frames)[/green]")
+            return True
+        except Exception as e:
+            console.print(f"[dim]render_pillow_frame fallback failed: {e}[/dim]")
+            return False
+
+    def _resolve_total_frames(self, anim) -> int:
+        frame_getters = [
+            'lottie_animation_get_totalframe',
+            'get_totalframe',
+            'total_frame',
+            'totalframe',
+        ]
+
+        for getter_name in frame_getters:
+            if hasattr(anim, getter_name):
+                try:
+                    value = int(getattr(anim, getter_name)())
+                    if value > 0:
+                        return value
+                except Exception:
+                    continue
+
+        return 0
+
+    def _resolve_frame_duration_ms(self, anim) -> int:
+        fps = self.fps if self.fps and self.fps > 0 else None
+
+        if fps is None and hasattr(anim, 'lottie_animation_get_framerate'):
+            try:
+                anim_fps = int(anim.lottie_animation_get_framerate())
+                fps = anim_fps if anim_fps > 0 else None
+            except Exception:
+                fps = None
+
+        if fps is None:
+            fps = 30
+
+        return max(1, int(1000 / fps))
